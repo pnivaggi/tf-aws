@@ -16,13 +16,13 @@ provider "aws" {
 # ------------------------------------------------------------------------------
 
 variable "server_port" {
-  description = "port number for web server"
+  description = "The TCP port number for web server"
   type = number
   default = 8080
 }
 
 variable "ec2_instance_name" {
-  description = "AWS EC2 instance name"
+  description = "The AWS EC2 instance name"
   type = string
   default = "tf-web-server"
 }
@@ -61,4 +61,9 @@ resource "aws_security_group" "security_group" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+}
+
+output "public_ip" {  
+  value       = aws_instance.instance.public_ip  
+  description = "The public IP address of the web server"
 }
