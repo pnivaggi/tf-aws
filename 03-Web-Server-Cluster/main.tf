@@ -1,10 +1,10 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# DEPLOY A SINGLE EC2 INSTANCE
-# This template runs a simple "Hello, World" web server on a single EC2 Instance
+# Deploy a Cluster of Web Servers
+# This template deploys an auto scaling group with web servers farm
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # ------------------------------------------------------------------------------
-# CONFIGURE OUR AWS CONNECTION
+# CONFIGURE AWS CONNECTION
 # ------------------------------------------------------------------------------
 
 provider "aws" {
@@ -39,16 +39,57 @@ data "aws_subnet_ids" "default" {
   vpc_id = data.aws_vpc.default.id
 }
 
-# data "aws_instance" "instance" {
-#   filter {
-#     name   = "tag:Name"
-#     values = ["tf-asg"]
-#   }
-# }
 
 # ------------------------------------------------------------------------------
-# DEPLOY A WEB SERVER CLUSTER
+# DEPLOY AN AUTO SCALING GROUP
 # ------------------------------------------------------------------------------
+
+resource "aws_launch_configuration" "launch_configuration" {  
+  # Ubuntu Server 18.04LTS
+  image_id        = "ami-02701bcdc5509e57b"
+  instance_type   = "t2.micro"
+  security_groups = [aws_security_group.security_group.id]
+
+  user_data = <<-EOF
+    #!/bin/bash
+    echo "Hello, Patrice" > index.html
+    nohup busybox httpd -f -p ${var.server_port} &
+    EOF
+
+  # Required when using a launch configuration with an auto scaling group.
+  # https://www.terraform.io/docs/providers/aws/r/launch_configuration.html
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_autoscaling_group" "asg" {
+  launch_configuration = aws_launch_configuration.launch_configuration.name
+  vpc_zone_identifier  = data.aws_subnet_ids.default.ids
+
+  target_group_arns = [aws_lb_target_group.target_group.arn]
+  health_check_type = "ELB"
+
+  min_size = 2
+  max_size = 6
+
+  tag {
+    key                 = "Name"
+    value               = var.asg_name
+    propagate_at_launch = true
+  }
+}
+
+resource "aws_security_group" "security_group" {
+  name = "${var.asg_name}-security-group"
+
+  ingress {
+    from_port   = var.server_port
+    to_port     = var.server_port
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
 
 resource "aws_lb" "lb" {
   name               = "${var.asg_name}-lb"
@@ -74,51 +115,38 @@ resource "aws_lb_listener" "http" {
   }
 }
 
-resource "aws_launch_configuration" "launch_configuration" {
-  # Amazon Linux
-  # ami           = "ami-05b622b5fa0269787"
-  
-  # Ubuntu Server 18.04LTS
-  image_id             = "ami-02701bcdc5509e57b"
+resource "aws_lb_target_group" "target_group" {
 
-  instance_type = "t2.micro"
-  security_groups = [aws_security_group.security_group.id]
+  name = "${var.asg_name}-target-group"
 
-  user_data = <<-EOF
-    #!/bin/bash
-    echo "Hello, Patrice" > index.html
-    nohup busybox httpd -f -p ${var.server_port} &
-    EOF
+  port     = var.server_port
+  protocol = "HTTP"
+  vpc_id   = data.aws_vpc.default.id
 
-  # Required when using a launch configuration with an auto scaling group.
-  # https://www.terraform.io/docs/providers/aws/r/launch_configuration.html
-  lifecycle {
-    create_before_destroy = true
+  health_check {
+    path                = "/"
+    protocol            = "HTTP"
+    matcher             = "200"
+    interval            = 15
+    timeout             = 3
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
   }
 }
 
-resource "aws_autoscaling_group" "asg" {
-  launch_configuration = aws_launch_configuration.launch_configuration.name
-  vpc_zone_identifier  = data.aws_subnet_ids.default.ids
+resource "aws_lb_listener_rule" "listener_rule" {
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 100
 
-  min_size = 2
-  max_size = 6
-
-  tag {
-    key                 = "Name"
-    value               = var.asg_name
-    propagate_at_launch = true
+  condition {
+    path_pattern {
+      values = ["*"]
+    }
   }
-}
 
-resource "aws_security_group" "security_group" {
-  name = "${var.asg_name}-security-group"
-
-  ingress {
-    from_port   = var.server_port
-    to_port     = var.server_port
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.target_group.arn
   }
 }
 
@@ -142,9 +170,7 @@ resource "aws_security_group" "alb_security_group" {
   }
 }
 
-# output "public_ip" {  
-#   value       = aws_instance.instance.public_ip  
-#   description = "The public IP address of the web server"
-# }
-
-
+output "alb_dns_name" {
+  value       = aws_lb.lb.dns_name
+  description = "The domain name of the load balancer"
+}

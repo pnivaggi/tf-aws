@@ -1,0 +1,48 @@
+digraph {
+	compound = "true"
+	newrank = "true"
+	subgraph "root" {
+		"[root] aws_autoscaling_group.asg (expand)" [label = "aws_autoscaling_group.asg", shape = "box"]
+		"[root] aws_launch_configuration.launch_configuration (expand)" [label = "aws_launch_configuration.launch_configuration", shape = "box"]
+		"[root] aws_lb.lb (expand)" [label = "aws_lb.lb", shape = "box"]
+		"[root] aws_lb_listener.http (expand)" [label = "aws_lb_listener.http", shape = "box"]
+		"[root] aws_lb_listener_rule.listener_rule (expand)" [label = "aws_lb_listener_rule.listener_rule", shape = "box"]
+		"[root] aws_lb_target_group.target_group (expand)" [label = "aws_lb_target_group.target_group", shape = "box"]
+		"[root] aws_security_group.alb_security_group (expand)" [label = "aws_security_group.alb_security_group", shape = "box"]
+		"[root] aws_security_group.security_group (expand)" [label = "aws_security_group.security_group", shape = "box"]
+		"[root] data.aws_subnet_ids.default (expand)" [label = "data.aws_subnet_ids.default", shape = "box"]
+		"[root] data.aws_vpc.default (expand)" [label = "data.aws_vpc.default", shape = "box"]
+		"[root] output.alb_dns_name" [label = "output.alb_dns_name", shape = "note"]
+		"[root] provider[\"registry.terraform.io/hashicorp/aws\"]" [label = "provider[\"registry.terraform.io/hashicorp/aws\"]", shape = "diamond"]
+		"[root] var.asg_name" [label = "var.asg_name", shape = "note"]
+		"[root] var.server_port" [label = "var.server_port", shape = "note"]
+		"[root] aws_autoscaling_group.asg (expand)" -> "[root] aws_launch_configuration.launch_configuration (expand)"
+		"[root] aws_autoscaling_group.asg (expand)" -> "[root] aws_lb_target_group.target_group (expand)"
+		"[root] aws_autoscaling_group.asg (expand)" -> "[root] data.aws_subnet_ids.default (expand)"
+		"[root] aws_launch_configuration.launch_configuration (expand)" -> "[root] aws_security_group.security_group (expand)"
+		"[root] aws_lb.lb (expand)" -> "[root] aws_security_group.alb_security_group (expand)"
+		"[root] aws_lb.lb (expand)" -> "[root] data.aws_subnet_ids.default (expand)"
+		"[root] aws_lb_listener.http (expand)" -> "[root] aws_lb.lb (expand)"
+		"[root] aws_lb_listener_rule.listener_rule (expand)" -> "[root] aws_lb_listener.http (expand)"
+		"[root] aws_lb_listener_rule.listener_rule (expand)" -> "[root] aws_lb_target_group.target_group (expand)"
+		"[root] aws_lb_target_group.target_group (expand)" -> "[root] data.aws_vpc.default (expand)"
+		"[root] aws_lb_target_group.target_group (expand)" -> "[root] var.asg_name"
+		"[root] aws_lb_target_group.target_group (expand)" -> "[root] var.server_port"
+		"[root] aws_security_group.alb_security_group (expand)" -> "[root] provider[\"registry.terraform.io/hashicorp/aws\"]"
+		"[root] aws_security_group.alb_security_group (expand)" -> "[root] var.asg_name"
+		"[root] aws_security_group.security_group (expand)" -> "[root] provider[\"registry.terraform.io/hashicorp/aws\"]"
+		"[root] aws_security_group.security_group (expand)" -> "[root] var.asg_name"
+		"[root] aws_security_group.security_group (expand)" -> "[root] var.server_port"
+		"[root] data.aws_subnet_ids.default (expand)" -> "[root] data.aws_vpc.default (expand)"
+		"[root] data.aws_vpc.default (expand)" -> "[root] provider[\"registry.terraform.io/hashicorp/aws\"]"
+		"[root] meta.count-boundary (EachMode fixup)" -> "[root] aws_autoscaling_group.asg (expand)"
+		"[root] meta.count-boundary (EachMode fixup)" -> "[root] aws_lb_listener_rule.listener_rule (expand)"
+		"[root] meta.count-boundary (EachMode fixup)" -> "[root] output.alb_dns_name"
+		"[root] output.alb_dns_name" -> "[root] aws_lb.lb (expand)"
+		"[root] provider[\"registry.terraform.io/hashicorp/aws\"] (close)" -> "[root] aws_autoscaling_group.asg (expand)"
+		"[root] provider[\"registry.terraform.io/hashicorp/aws\"] (close)" -> "[root] aws_lb_listener_rule.listener_rule (expand)"
+		"[root] root" -> "[root] meta.count-boundary (EachMode fixup)"
+		"[root] root" -> "[root] provider[\"registry.terraform.io/hashicorp/aws\"] (close)"
+	}
+}
+
