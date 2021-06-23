@@ -1,4 +1,5 @@
 .secrets
 .terraform
-.tfstate
-.tfstate.backup
+*.tfstate
+*.tfstate.backup
+*lock.hcl
